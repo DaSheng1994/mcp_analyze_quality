@@ -34,10 +34,13 @@ ALERT_THRESHOLDS = {
         "heap_growth_critical": 200,  # 堆增长率超过200%为严重
         "heap_growth_warning": 100,   # 堆增长率超过100%为警告
         "heap_utilization_critical": 0.9,  # 堆利用率超过90%为严重
+        "heap_j_growth_mb_critical": 80,   # Java堆增长超过80MB为严重
+        "heap_n_growth_mb_critical": 500,  # Native堆增长超过500MB为严重
     },
     "system_resources": {
         "fd_critical": 800,           # 文件描述符超过800为严重
         "fd_warning": 600,            # 文件描述符超过600为警告
+        "fd_growth_critical": 100,    # 文件描述符增长超过100为严重
         "views_growth_critical": 200, # 视图增长率超过200%为严重
     }
 }
@@ -153,31 +156,92 @@ def analyze_performance_alerts(data_rows: List[Dict], stats: Dict) -> Dict[str, 
         elif thread_variance > ALERT_THRESHOLDS["thread_management"]["thread_variance_warning"]:
             all_alerts["warning_alerts"].append(f"⚠️ 线程波动较大：变化范围{thread_variance}")
     
-    # 堆内存告警
+    # 堆内存告警 - 增强版本，检查绝对增长量和回落情况
+    def check_heap_fallback(data_rows: List[Dict], field: str) -> bool:
+        """检查堆内存是否有回落"""
+        values = []
+        for row in data_rows:
+            try:
+                value = float(row[field].replace(',', ''))
+                values.append(value)
+            except:
+                continue
+        
+        if len(values) < 10:  # 数据点太少，无法判断
+            return False
+            
+        # 找到峰值位置
+        max_value = max(values)
+        max_index = values.index(max_value)
+        
+        # 检查峰值后是否有明显回落（至少回落20%）
+        if max_index < len(values) - 5:  # 峰值后至少有5个数据点
+            post_peak_values = values[max_index:]
+            min_post_peak = min(post_peak_values)
+            fallback_ratio = (max_value - min_post_peak) / max_value
+            return fallback_ratio > 0.2  # 回落超过20%认为有回落
+        
+        return False
+    
     heap_fields = ["Heap Size(J)", "Heap Size(N)"]
     for field in heap_fields:
         if field in stats:
             heap_stat = stats[field]
-            heap_growth = ((heap_stat['最大值'] - heap_stat['最小值']) / heap_stat['最小值']) * 100
+            heap_growth_mb = (heap_stat['最大值'] - heap_stat['最小值']) / 1024  # 转换为MB
+            heap_growth_rate = ((heap_stat['最大值'] - heap_stat['最小值']) / heap_stat['最小值']) * 100
             
-            if heap_growth > ALERT_THRESHOLDS["heap_usage"]["heap_growth_critical"]:
-                all_alerts["priority_alerts"].append(f"🚨 {field}严重增长：增长{heap_growth:.1f}%")
-            elif heap_growth > ALERT_THRESHOLDS["heap_usage"]["heap_growth_warning"]:
-                all_alerts["warning_alerts"].append(f"⚠️ {field}增长较快：增长{heap_growth:.1f}%")
+            # Java堆内存检查：增长超过80MB
+            if field == "Heap Size(J)" and heap_growth_mb > ALERT_THRESHOLDS["heap_usage"]["heap_j_growth_mb_critical"]:
+                all_alerts["priority_alerts"].append(f"🚨 Java堆内存增长严重超标：增长{heap_growth_mb:.1f}MB，建议检查内存泄漏")
+                all_alerts["overall_health"] = "严重"
+            
+            # Native堆内存检查：增长超过500MB且没有回落
+            elif field == "Heap Size(N)" and heap_growth_mb > ALERT_THRESHOLDS["heap_usage"]["heap_n_growth_mb_critical"]:
+                has_fallback = check_heap_fallback(data_rows, field)
+                if not has_fallback:
+                    all_alerts["priority_alerts"].append(f"🚨 Native堆内存严重增长且无回落：增长{heap_growth_mb:.1f}MB，可能存在严重内存泄漏")
+                    all_alerts["overall_health"] = "严重"
+                else:
+                    all_alerts["warning_alerts"].append(f"⚠️ Native堆内存增长较大但有回落：增长{heap_growth_mb:.1f}MB")
+            
+            # 保留原有的百分比检查作为补充
+            elif heap_growth_rate > ALERT_THRESHOLDS["heap_usage"]["heap_growth_critical"]:
+                all_alerts["priority_alerts"].append(f"🚨 {field}严重增长：增长{heap_growth_rate:.1f}%")
+            elif heap_growth_rate > ALERT_THRESHOLDS["heap_usage"]["heap_growth_warning"]:
+                all_alerts["warning_alerts"].append(f"⚠️ {field}增长较快：增长{heap_growth_rate:.1f}%")
     
     # 系统资源告警
     if "FD" in stats:
         fd_stat = stats["FD"]
-        if fd_stat['最大值'] > ALERT_THRESHOLDS["system_resources"]["fd_critical"]:
-            all_alerts["priority_alerts"].append(f"🚨 文件描述符严重超标：峰值{fd_stat['最大值']}，可能导致系统不稳定")
-        elif fd_stat['最大值'] > ALERT_THRESHOLDS["system_resources"]["fd_warning"]:
-            all_alerts["warning_alerts"].append(f"⚠️ 文件描述符偏高：峰值{fd_stat['最大值']}，建议检查文件句柄管理")
+        max_fd = fd_stat['最大值']
+        min_fd = fd_stat['最小值']
+        fd_growth = max_fd - min_fd  # 绝对增长数量
+        
+        # 检查文件描述符增长是否超过100（严重告警）
+        if fd_growth > ALERT_THRESHOLDS["system_resources"]["fd_growth_critical"]:
+            all_alerts["priority_alerts"].append(f"🚨 文件描述符增长严重超标：增长{fd_growth:.0f}个，可能存在资源泄漏")
+            all_alerts["overall_health"] = "严重"
+        # 检查文件描述符总数是否超标
+        elif max_fd > ALERT_THRESHOLDS["system_resources"]["fd_critical"]:
+            all_alerts["priority_alerts"].append(f"🚨 文件描述符严重超标：峰值{max_fd}，可能导致系统不稳定")
+            all_alerts["overall_health"] = "严重"
+        elif max_fd > ALERT_THRESHOLDS["system_resources"]["fd_warning"]:
+            all_alerts["warning_alerts"].append(f"⚠️ 文件描述符偏高：峰值{max_fd}，建议检查文件句柄管理")
     
     if "Views" in stats:
         views_stat = stats["Views"]
-        views_growth = ((views_stat['最大值'] - views_stat['最小值']) / views_stat['最小值']) * 100
-        if views_growth > ALERT_THRESHOLDS["system_resources"]["views_growth_critical"]:
-            all_alerts["priority_alerts"].append(f"🚨 视图数量异常增长：增长{views_growth:.1f}%，可能存在视图泄漏")
+        max_views = views_stat['最大值']
+        min_views = views_stat['最小值']
+        views_growth_count = max_views - min_views  # 绝对增长数量
+        views_growth_rate = ((max_views - min_views) / min_views) * 100  # 增长率
+        
+        # 检查视图增长数量是否超过700（严重告警）
+        if views_growth_count > 700:
+            all_alerts["priority_alerts"].append(f"🚨 视图数量增长严重超标：增长{views_growth_count:.0f}个，可能导致内存溢出")
+            all_alerts["overall_health"] = "严重"
+        # 检查视图增长率是否异常
+        elif views_growth_rate > ALERT_THRESHOLDS["system_resources"]["views_growth_critical"]:
+            all_alerts["priority_alerts"].append(f"🚨 视图数量异常增长：增长{views_growth_rate:.1f}%，可能存在视图泄漏")
     
     # WebView特殊检查
     if "WebViews" in stats and stats["WebViews"]['最大值'] > 0:
@@ -318,61 +382,61 @@ def parse_performance_data(csv_content: str) -> Dict[str, Any]:
         return {"error": f"解析CSV数据时出错: {str(e)}"}
 
 def analyze_text_content(content: str, url: str, content_type: str) -> Dict[str, Any]:
-    """分析文本内容，专门处理性能监控数据"""
+    """分析文本内容，专门处理性能监控数据 - 简化版本，只返回关键结果"""
     
     # 检查是否是CSV格式的性能数据
     if "Time,Total Pss,Heap Size" in content or content.strip().startswith("Time,"):
         # 这是性能监控CSV数据
         csv_analysis = parse_performance_data(content)
         
+        # 简化分析结果，只保留关键信息
+        simplified_analysis = {}
+        
+        # 基本信息
+        simplified_analysis["数据概览"] = {
+            "总记录数": csv_analysis.get("总记录数", 0),
+            "监控时长": csv_analysis.get("时间范围", {})
+        }
+        
+        # 只保留关键指标
+        if "关键指标分析" in csv_analysis:
+            simplified_analysis["关键指标"] = csv_analysis["关键指标分析"]
+        
+        # 告警分析 - 重点突出
+        if "告警分析" in csv_analysis:
+            alert_analysis = csv_analysis["告警分析"]
+            simplified_analysis["告警分析"] = {
+                "系统健康状态": alert_analysis.get("overall_health", "良好"),
+                "严重告警": alert_analysis.get("priority_alerts", []),
+                "警告告警": alert_analysis.get("warning_alerts", [])
+            }
+            
+            # 只在有严重内存泄漏时显示详细内存分析
+            if alert_analysis.get("overall_health") == "严重" and "memory_analysis" in alert_analysis:
+                memory_details = alert_analysis["memory_analysis"]
+                simplified_analysis["内存泄漏分析"] = {
+                    "总体增长率": memory_details.get("总体增长率"),
+                    "连续增长周期": memory_details.get("最大连续增长周期"),
+                    "风险等级": "🔴 极高" if float(memory_details.get("总体增长率", "0%").replace("%", "")) > 100 else "🟡 中等"
+                }
+        
         return {
             "url": url,
             "content_type": content_type,
             "data_type": "performance_monitoring_csv",
-            "is_text": True,
-            "analysis": csv_analysis,
-            "content_preview": content[:500] + "..." if len(content) > 500 else content
+            "analysis": simplified_analysis
         }
     
-    # 如果不是性能数据，进行通用文本分析
-    word_count = len(content.split())
-    char_count = len(content)
-    line_count = len(content.split('\n'))
-    
-    # Extract URLs if any
-    url_pattern = r'https?://[^\s<>"{}|\\^`\[\]]+'
-    urls_found = re.findall(url_pattern, content)
-    
-    # Extract email addresses
-    email_pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
-    emails_found = re.findall(email_pattern, content)
-    
-    # Simple keyword extraction (most common words)
-    words = re.findall(r'\b\w+\b', content.lower())
-    word_freq = {}
-    for word in words:
-        if len(word) > 3:  # Only count words longer than 3 characters
-            word_freq[word] = word_freq.get(word, 0) + 1
-    
-    # Get top 10 most common words
-    top_words = sorted(word_freq.items(), key=lambda x: x[1], reverse=True)[:10]
-    
+    # 如果不是性能数据，进行通用文本分析（保持简单）
     return {
         "url": url,
         "content_type": content_type,
         "data_type": "general_text",
-        "is_text": True,
         "analysis": {
-            "word_count": word_count,
-            "character_count": char_count,
-            "line_count": line_count,
-            "urls_found": len(urls_found),
-            "emails_found": len(emails_found),
-            "top_words": top_words,
-            "sample_urls": urls_found[:5] if urls_found else [],
-            "sample_emails": emails_found[:5] if emails_found else []
-        },
-        "content_preview": content[:500] + "..." if len(content) > 500 else content
+            "word_count": len(content.split()),
+            "line_count": len(content.split('\n')),
+            "content_type": "非性能监控数据"
+        }
     }
 
 if MCP_AVAILABLE:
@@ -417,8 +481,37 @@ if MCP_AVAILABLE:
             }
 
     if __name__ == "__main__":
+        import sys
+        import os
+        
+        # 网络配置选项
+        host = os.getenv("MCP_HOST", "localhost")  # 默认localhost，可设置为0.0.0.0允许外部访问
+        port = int(os.getenv("MCP_PORT", "8000"))  # 默认端口8000
+        
+        # 检查命令行参数
+        if "--network" in sys.argv:
+            host = "0.0.0.0"  # 允许外部访问
+            print(f"🌐 启动网络模式: 允许其他电脑访问")
+        
+        if "--port" in sys.argv:
+            try:
+                port_idx = sys.argv.index("--port") + 1
+                if port_idx < len(sys.argv):
+                    port = int(sys.argv[port_idx])
+            except (ValueError, IndexError):
+                print("❌ 端口参数错误，使用默认端口8000")
+        
+        print(f"🚀 启动MCP服务器...")
+        print(f"📍 地址: {host}:{port}")
+        if host == "0.0.0.0":
+            import socket
+            local_ip = socket.gethostbyname(socket.gethostname())
+            print(f"🔗 其他电脑可通过以下地址访问:")
+            print(f"   - http://{local_ip}:{port}")
+            print(f"   - 或使用您的实际IP地址")
+        
         # 运行FastMCP服务器
-        mcp.run()
+        mcp.run(host=host, port=port)
 else:
     print("FastMCP not available. Please install with: pip install mcp")
     print("Or use the manual implementation in main.py") 

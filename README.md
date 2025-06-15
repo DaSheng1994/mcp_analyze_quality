@@ -1,251 +1,271 @@
-# Performance Data Analyzer MCP Server
+# 🚀 MCP性能分析服务器
 
-这是一个符合Model Context Protocol (MCP)标准的服务器，专门用于分析性能监控数据，特别是Excel/CSV格式的应用性能数据。**新增智能告警系统，优先检测内存泄漏等严重问题！**
+> 移动应用性能监控数据智能分析工具，支持内存泄漏检测、资源监控告警
 
-## 🎯 主要功能
+## ⚡ 快速开始（推荐）
 
-### 🚨 智能告警系统 (NEW!)
-- **优先级告警**：严重问题优先显示，确保关键问题不被忽视
-- **内存泄漏检测**：智能分析内存增长趋势，精确识别泄漏风险
-- **连续增长监控**：检测持续的内存增长模式
-- **阈值可配置**：支持自定义告警阈值和规则
-- **分级告警**：严重🔴 / 警告🟡 / 信息🔵 三级告警体系
-
-### 性能监控数据分析
-- **专业CSV解析**：自动识别和解析性能监控CSV数据
-- **关键指标分析**：内存使用、线程数、视图数等关键性能指标
-- **趋势分析**：自动分析数据变化趋势（上升/下降/稳定）
-- **性能建议**：基于数据分析提供性能优化建议
-- **统计信息**：最小值、最大值、平均值等统计数据
-
-### 支持的数据格式
-专门处理包含以下字段的CSV数据：
-- `Time` - 时间戳
-- `Total Pss` - 总内存使用
-- `Heap Size(J/N)` - Java/Native堆大小
-- `Heap Alloc(J/N)` - Java/Native堆分配
-- `Threads` - 线程数
-- `Views` - 视图数
-- `Activities` - Activity数
-- `WebViews` - WebView数
-- 以及其他30+个性能指标
-
-### 通用文本分析
-对于非性能数据，仍支持：
-- 字数统计、字符数统计、行数统计
-- URL链接提取、邮箱地址提取
-- 关键词频率分析、内容预览
-
-## 🚨 智能告警示例
-
-### 严重告警 (优先处理)
-```
-🔴 优先告警 (需要立即处理):
-  1. 🚨 严重内存泄漏风险：内存持续大幅增长，建议立即检查
-  2. 🚨 Heap Size(N)严重增长：增长253.2%
-  3. 🚨 文件描述符严重超标：峰值820，可能导致系统不稳定
-```
-
-### 内存泄漏详细分析
-```
-🧠 内存泄漏详细分析:
-  - 总体增长率: 108.6%
-  - 最大连续增长周期: 5 次
-  - 峰值/平均值比例: 1.40
-  - 近期增长率: -10.1%
-  - 分析数据点: 231 个
-```
-
-### 系统健康状态
-- 🟢 良好：无严重问题
-- 🟡 注意：有轻微问题需关注  
-- 🟠 警告：有明显问题需处理
-- 🔴 严重：有严重问题需立即处理
-
-## ⚙️ 告警阈值配置
-
-### 内存泄漏检测
-- **严重阈值**：增长率 > 100% 且连续增长 ≥ 5 周期
-- **警告阈值**：增长率 > 50% 或近期快速增长
-- **峰值异常**：峰值/平均值比例 > 1.5
-
-### 线程管理
-- **严重阈值**：线程数 > 400 或波动 > 100
-- **警告阈值**：线程数 > 350 或波动 > 50
-
-### 系统资源
-- **文件描述符**：严重 > 800，警告 > 600
-- **视图增长**：严重增长 > 200%
-- **WebView管理**：数量 > 5 个需要关注
-
-### 自定义配置
-可通过 `alert_config.json` 文件自定义所有告警阈值：
-
-```json
-{
-  "alert_thresholds": {
-    "memory_leak": {
-      "growth_rate_critical": 100,
-      "growth_rate_warning": 50,
-      "continuous_growth_periods": 5
-    }
-  }
-}
-```
-
-## 📊 分析示例
-
-对于性能监控数据，分析器会提供：
-
-```
-🚨 智能告警分析:
-   系统健康状态: 🔴 严重
-
-🔴 优先告警 (需要立即处理):
-   1. 🚨 严重内存泄漏风险：内存持续大幅增长，建议立即检查
-
-📈 关键指标分析:
-   💾 内存使用: 698,126 KB → 1,095,184 KB (峰值: 1,429,966 KB, +56.9%)
-   🧵 线程数: 326 → 358 (峰值: 388, +32)
-
-🎯 优先处理建议:
-   1. 立即检查内存泄漏问题，重点关注对象生命周期管理
-   2. 分析内存增长的根本原因
-   3. 使用内存分析工具进行深度诊断
-```
-
-## 🚀 安装和配置
-
-### 1. 环境准备
+### 一键部署
 ```bash
-# 创建虚拟环境
-python3 -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
+# Linux/macOS
+curl -sSL https://raw.githubusercontent.com/your-username/mcp_demo/main/git_deploy.sh | bash
 
-# 安装依赖
-pip install mcp
+# 或手动部署
+git clone https://github.com/your-username/mcp_demo.git
+cd mcp_demo
+pip install -r requirements.txt
+python main.py --network
 ```
 
-### 2. 自动配置
+### Windows快速启动
+```cmd
+git clone https://github.com/your-username/mcp_demo.git
+cd mcp_demo
+pip install -r requirements.txt
+start_server.bat
+```
+
+## 🌐 多电脑使用
+
+### 方法1: 网络访问（推荐）
+1. **服务器端**（任意一台电脑）:
+   ```bash
+   git clone https://github.com/your-username/mcp_demo.git
+   cd mcp_demo
+   python main.py --network
+   ```
+
+2. **客户端**（其他电脑的Cursor）:
+   ```json
+   // ~/.cursor/mcp_settings.json
+   {
+     "mcpServers": {
+       "performance-analyzer": {
+         "command": "python",
+         "args": ["-c", "import urllib.request; exec(urllib.request.urlopen('http://服务器IP:8000/mcp').read())"],
+         "env": {}
+       }
+     }
+   }
+   ```
+
+### 方法2: 每台电脑独立部署
 ```bash
-# 运行自动配置脚本
-python3 setup_cursor.py
-```
+# 在每台需要使用的电脑上执行
+git clone https://github.com/your-username/mcp_demo.git
+cd mcp_demo
+pip install -r requirements.txt
 
-### 3. 手动配置（可选）
-
-#### Cursor配置
-在 `~/.cursor/mcp.json` 中添加：
-```json
+# 配置Cursor MCP
+# 编辑 ~/.cursor/mcp_settings.json
 {
   "mcpServers": {
-    "performance-data-analyzer": {
-      "command": "/path/to/venv/bin/python3",
-      "args": ["/path/to/main.py"],
-      "description": "Performance monitoring data analyzer with intelligent alerts"
+    "performance-analyzer": {
+      "command": "python",
+      "args": ["/path/to/mcp_demo/main.py"],
+      "env": {}
     }
   }
 }
 ```
 
-#### Claude Desktop配置
-在相应配置文件中添加类似配置。
+## 📊 功能特性
 
-## 💬 使用方法
+### 🔍 智能分析
+- **内存泄漏检测**: 自动识别内存持续增长模式
+- **资源监控**: 线程、文件描述符、视图数量监控
+- **性能告警**: 多级告警系统（严重/警告/信息）
+- **趋势分析**: 33项性能指标深度分析
 
-### 在Cursor中使用
+### 🚨 告警系统
+- **内存泄漏**: 增长率>100% + 连续5周期 = 严重告警
+- **Java堆**: 增长>80MB = 严重告警
+- **Native堆**: 增长>500MB且无回落 = 严重告警
+- **文件描述符**: 增长>100个 = 严重告警
+- **视图数量**: 增长>700个 = 严重告警
 
-#### 分析性能数据：
-- **"请分析这个性能数据文件：https://example.com/performance.csv"**
-- **"帮我看看这个应用的内存使用情况：[URL]"**
-- **"分析这个CSV文件中的性能趋势，重点关注内存泄漏"**
+## 🛠️ 安装要求
 
-#### 分析普通网页：
-- **"请分析这个网址的内容：https://example.com"**
-- **"这个API文档里有什么内容？"**
+- Python 3.8+
+- Git
+- 网络连接（用于安装依赖）
 
-### 支持的数据源
-- **CSV文件**：直接链接到CSV文件
-- **API接口**：返回CSV格式数据的API
-- **GitHub Raw文件**：存储在GitHub上的CSV文件
-- **任何可访问的文本/CSV URL**
+## 📁 项目结构
 
-## 🔧 技术特性
-
-- **智能告警**：基于机器学习的异常检测算法
-- **优先级排序**：严重问题优先显示，确保不遗漏关键问题
-- **连续监控**：分析数据的时间序列特征
-- **零依赖核心**：除MCP库外，只使用Python标准库
-- **FastMCP框架**：使用官方推荐的FastMCP实现
-- **错误处理**：完善的错误处理和异常捕获
-- **中文支持**：完整的中文界面和分析报告
-
-## 📈 性能指标说明
-
-| 指标 | 说明 | 严重阈值 | 警告阈值 |
-|------|------|----------|----------|
-| Total Pss | 应用总内存使用 | 增长>100% | 增长>50% |
-| Heap Size(J) | Java堆大小 | 增长>200% | 增长>100% |
-| Heap Size(N) | Native堆大小 | 增长>200% | 增长>100% |
-| Threads | 线程总数 | >400 | >350 |
-| Views | 视图数量 | 增长>200% | 增长>100% |
-| FD | 文件描述符数量 | >800 | >600 |
-| WebViews | WebView数量 | >10 | >5 |
-
-## 🛠️ 故障排除
-
-### MCP服务器状态检查
-```bash
-# 检查虚拟环境
-source venv/bin/activate
-python3 -c "import mcp; print('MCP库已安装')"
-
-# 测试性能数据分析
-python3 test_meminfo.py
+```
+mcp_demo/
+├── main.py                 # 主服务器程序
+├── requirements.txt        # Python依赖
+├── git_deploy.sh          # 一键部署脚本
+├── start_server.sh        # Linux/macOS启动脚本
+├── start_server.bat       # Windows启动脚本
+├── portable_deploy.py     # 便携式部署工具
+├── DEPLOYMENT_GUIDE.md    # 详细部署指南
+└── README.md              # 本文件
 ```
 
-### 常见问题
-1. **红色状态**：检查Python路径和虚拟环境
-2. **解析失败**：确认CSV格式正确，包含必要的列
-3. **网络错误**：检查URL可访问性
-4. **告警过多**：调整 `alert_config.json` 中的阈值设置
+## 🔧 配置选项
 
-### 自定义告警阈值
-编辑 `alert_config.json` 文件来调整告警敏感度：
+### 环境变量
+```bash
+export MCP_HOST=0.0.0.0      # 监听地址
+export MCP_PORT=8000         # 监听端口
+```
 
+### 命令行参数
+```bash
+python main.py --network     # 网络模式
+python main.py --port 8080   # 自定义端口
+```
+
+## 📖 使用示例
+
+### 分析CSV性能数据
+```python
+# 在Cursor中使用MCP工具
+请分析这个性能数据：http://your-server:8000/meminfo.csv
+```
+
+### 示例输出
 ```json
 {
-  "alert_thresholds": {
-    "memory_leak": {
-      "growth_rate_critical": 150,  // 提高严重告警阈值
-      "growth_rate_warning": 75     // 提高警告告警阈值
-    }
+  "系统健康状态": "🔴 严重",
+  "严重告警": [
+    "🚨 严重内存泄漏风险：内存持续大幅增长，建议立即检查",
+    "🚨 Java堆内存增长严重超标：增长114.5MB，建议检查内存泄漏"
+  ],
+  "内存泄漏分析": {
+    "总体增长率": "108.6%",
+    "连续增长周期": 5,
+    "风险等级": "🔴 极高"
   }
 }
 ```
 
-## 🎉 开始使用
+## 🚀 部署方案对比
 
-现在你可以在Cursor中直接分析应用性能数据，获得专业的性能分析报告和**智能告警**！
+| 方案 | 适用场景 | 复杂度 | 推荐度 |
+|------|----------|--------|--------|
+| **Git仓库** | 通用，推荐 | ⭐⭐ | ⭐⭐⭐⭐⭐ |
+| 网络部署 | 临时使用 | ⭐ | ⭐⭐⭐⭐ |
+| 云服务器 | 企业级 | ⭐⭐⭐ | ⭐⭐⭐⭐ |
+| Docker | 容器化 | ⭐⭐⭐ | ⭐⭐⭐ |
+| 便携式 | 离线环境 | ⭐ | ⭐⭐ |
 
+## 🔄 更新和维护
+
+### 更新代码
+```bash
+cd mcp_demo
+git pull origin main
+pip install --upgrade -r requirements.txt
 ```
-示例：分析Android应用性能数据
-"请分析这个Android应用的性能数据：https://example.com/app_performance.csv"
+
+### 自动更新脚本
+```bash
+# 使用内置更新脚本
+./update.sh
 ```
 
-MCP服务器会自动：
-✅ 解析CSV数据结构  
-✅ **🚨 优先检测内存泄漏风险**  
-✅ 分析内存使用趋势  
-✅ 评估线程使用情况  
-✅ 检测性能异常  
-✅ **按优先级排序告警**  
-✅ 提供针对性优化建议  
+### 服务管理
+```bash
+# 启动服务
+./start.sh
 
-### 🆕 新功能亮点
+# 停止服务
+./stop.sh
 
-- **🔴 严重问题优先显示**：确保关键问题不被忽视
-- **🧠 智能内存泄漏检测**：基于多维度分析的精确检测
-- **📈 连续增长趋势分析**：识别持续的性能恶化模式
-- **⚙️ 可配置告警阈值**：根据应用特点自定义告警规则
-- **🎯 针对性处理建议**：提供具体的问题解决方案
+# 查看状态
+ps aux | grep "python main.py"
+```
+
+## 🌍 网络配置
+
+### 防火墙设置
+```bash
+# Ubuntu/Debian
+sudo ufw allow 8000
+
+# CentOS/RHEL
+sudo firewall-cmd --permanent --add-port=8000/tcp
+sudo firewall-cmd --reload
+
+# Windows
+# 在Windows Defender防火墙中允许端口8000
+```
+
+### 获取服务器IP
+```bash
+# Linux/macOS
+hostname -I | awk '{print $1}'
+
+# Windows
+ipconfig | findstr IPv4
+```
+
+## 🚨 故障排除
+
+### 常见问题
+
+**1. Git克隆失败**
+```bash
+# 使用HTTPS替代SSH
+git clone https://github.com/your-username/mcp_demo.git
+```
+
+**2. 依赖安装失败**
+```bash
+# 升级pip
+pip install --upgrade pip
+# 使用国内镜像
+pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple/
+```
+
+**3. 端口被占用**
+```bash
+# 查看端口占用
+netstat -an | grep 8000
+# 使用其他端口
+python main.py --network --port 8001
+```
+
+**4. MCP连接失败**
+- 检查Cursor MCP配置文件路径
+- 确认服务器正在运行
+- 验证网络连通性
+
+### 调试模式
+```bash
+# 启用详细日志
+python main.py --network --debug
+
+# 查看实时日志
+tail -f mcp.log
+```
+
+## 📞 技术支持
+
+### 文档资源
+- [详细部署指南](./DEPLOYMENT_GUIDE.md)
+- [云服务部署](./cloud_deploy.md)
+- [部署方案对比](./部署方案总结.md)
+
+### 社区支持
+- GitHub Issues: 报告问题和建议
+- 讨论区: 技术交流和经验分享
+
+## 📄 许可证
+
+MIT License - 详见 [LICENSE](LICENSE) 文件
+
+---
+
+## 🎯 为什么选择Git仓库部署？
+
+✅ **标准化**: 业界标准的代码分发方式  
+✅ **版本控制**: 自动跟踪更新和回滚  
+✅ **跨平台**: 支持所有主流操作系统  
+✅ **易维护**: 一条命令完成更新  
+✅ **团队协作**: 多人开发和部署友好  
+✅ **文档完整**: 包含完整的使用说明  
+
+**开始使用**: `git clone <repo-url> && cd mcp_demo && pip install -r requirements.txt && python main.py --network`
