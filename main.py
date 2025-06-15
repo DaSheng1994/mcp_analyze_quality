@@ -484,34 +484,11 @@ if MCP_AVAILABLE:
         import sys
         import os
         
-        # 网络配置选项
-        host = os.getenv("MCP_HOST", "localhost")  # 默认localhost，可设置为0.0.0.0允许外部访问
-        port = int(os.getenv("MCP_PORT", "8000"))  # 默认端口8000
+        print(f"🚀 启动MCP性能分析服务器...")
+        print(f"📊 支持功能：内存泄漏检测、性能告警分析")
         
-        # 检查命令行参数
-        if "--network" in sys.argv:
-            host = "0.0.0.0"  # 允许外部访问
-            print(f"🌐 启动网络模式: 允许其他电脑访问")
-        
-        if "--port" in sys.argv:
-            try:
-                port_idx = sys.argv.index("--port") + 1
-                if port_idx < len(sys.argv):
-                    port = int(sys.argv[port_idx])
-            except (ValueError, IndexError):
-                print("❌ 端口参数错误，使用默认端口8000")
-        
-        print(f"🚀 启动MCP服务器...")
-        print(f"📍 地址: {host}:{port}")
-        if host == "0.0.0.0":
-            import socket
-            local_ip = socket.gethostbyname(socket.gethostname())
-            print(f"🔗 其他电脑可通过以下地址访问:")
-            print(f"   - http://{local_ip}:{port}")
-            print(f"   - 或使用您的实际IP地址")
-        
-        # 运行FastMCP服务器
-        mcp.run(host=host, port=port)
+        # 运行FastMCP服务器 - 使用stdio模式
+        mcp.run()
 else:
     print("FastMCP not available. Please install with: pip install mcp")
     print("Or use the manual implementation in main.py") 
