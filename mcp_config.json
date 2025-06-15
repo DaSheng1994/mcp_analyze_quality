@@ -1,9 +1,0 @@
-{
-  "mcpServers": {
-    "web-content-analyzer": {
-      "command": "python3",
-      "args": ["main.py"],
-      "description": "A web content analyzer that can fetch and analyze content from URLs"
-    }
-  }
-} 

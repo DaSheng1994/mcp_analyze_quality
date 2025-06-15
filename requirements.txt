@@ -1,2 +1,20 @@
-mcp>=1.0.0
-fastmcp>=0.1.0 
+# MCP核心依赖
+mcp>=1.9.4
+fastmcp>=2.8.1
+
+# HTTP和网络相关
+httpx>=0.28.1
+requests>=2.31.0
+
+# 数据处理
+pandas>=2.0.0
+numpy>=1.24.0
+
+# JSON和配置
+pydantic>=2.7.2
+pydantic-settings>=2.5.2
+
+# 工具库
+typer>=0.16.0
+rich>=14.0.0
+click>=8.2.1 
