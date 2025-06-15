@@ -8,7 +8,7 @@
 
 #### 1. **获取项目**
 ```bash
-git clone https://github.com/your-username/mcp_analyze_quality.git
+git clone git@github.com:DaSheng1994/mcp_analyze_quality.git
 cd mcp_analyze_quality
 ```
 
@@ -70,7 +70,7 @@ pip install -r requirements.txt
 #### 1. **服务器端部署**
 ```bash
 # 在服务器上部署
-git clone https://github.com/your-username/mcp_analyze_quality.git
+git clone git@github.com:DaSheng1994/mcp_analyze_quality.git
 cd mcp_analyze_quality
 python3 -m venv .venv
 source .venv/bin/activate
@@ -284,14 +284,14 @@ tail -f mcp.log
 ## 📞 **技术支持**
 
 ### **获取帮助**
-- 📧 **邮件**: your-email@example.com
-- 🐛 **问题反馈**: [GitHub Issues](https://github.com/your-username/mcp_analyze_quality/issues)
-- 📖 **文档**: [项目Wiki](https://github.com/your-username/mcp_analyze_quality/wiki)
+- 📧 **邮件**: dasheng1994@example.com
+- 🐛 **问题反馈**: [GitHub Issues](https://github.com/DaSheng1994/mcp_analyze_quality/issues)
+- 📖 **文档**: [项目Wiki](https://github.com/DaSheng1994/mcp_analyze_quality/wiki)
 
 ### **贡献代码**
 ```bash
 # Fork项目
-git clone https://github.com/your-username/mcp_analyze_quality.git
+git clone git@github.com:DaSheng1994/mcp_analyze_quality.git
 cd mcp_analyze_quality
 
 # 创建分支
@@ -316,10 +316,10 @@ git push origin feature/your-feature
 
 ```bash
 # 一键启动（推荐）
-curl -sSL https://raw.githubusercontent.com/your-username/mcp_analyze_quality/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/DaSheng1994/mcp_analyze_quality/main/install.sh | bash
 
 # 或手动安装
-git clone https://github.com/your-username/mcp_analyze_quality.git
+git clone git@github.com:DaSheng1994/mcp_analyze_quality.git
 cd mcp_analyze_quality && pip install -r requirements.txt
 python main.py
 ```
