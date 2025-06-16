@@ -1,21 +1,13 @@
 [project]
 name = "mcp-analyze-quality"
 version = "0.1.0"
-description = "MCP Performance Analysis Server - Mobile app performance monitoring data intelligent analysis tool"
+description = "MCP Performance Analysis Server - Focused on critical performance issue detection with concise output"
 readme = "README.md"
 requires-python = ">=3.8"
 dependencies = [
     "mcp>=1.9.4",
     "fastmcp>=2.8.1",
-    "httpx>=0.28.1",
     "requests>=2.31.0",
-    "pandas>=2.0.0",
-    "numpy>=1.24.0",
-    "pydantic>=2.7.2",
-    "pydantic-settings>=2.5.2",
-    "typer>=0.16.0",
-    "rich>=14.0.0",
-    "click>=8.2.1",
 ]
 
 [build-system]
