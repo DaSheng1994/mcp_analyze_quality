@@ -58,66 +58,55 @@ def fetch_csv_data(url: str) -> Dict[str, Any]:
         with urllib.request.urlopen(url) as response:
             content = response.read()
             content_type = response.info().get_content_type()
-            
             # 解码为文本
-            try:
-                if content_type and ('text' in content_type or 'csv' in content_type):
+            if content_type and ('text' in content_type or 'csv' in content_type):
+                try:
                     text_content = content.decode('utf-8')
-                    
-                    # 解析CSV
-                    csv_file = io.StringIO(text_content)
-                    reader = csv.DictReader(csv_file)
-                    
-                    data_rows = []
-                    for row in reader:
-                        data_rows.append(row)
-                    
-                    if not data_rows:
-                        return {"error": "没有找到数据行"}
-                    
-                    # 获取列信息
-                    columns = list(data_rows[0].keys())
-                    
-                    # 添加列含义说明
-                    column_info = {}
-                    for col in columns:
-                        column_info[col] = {
-                            "meaning": COLUMN_MEANINGS.get(col, "未知列含义"),
-                            "sample_values": [row.get(col, "") for row in data_rows[:3]]  # 前3个样本值
-                        }
-                    
-                    # 加载分析规则
-                    analysis_rules = load_analysis_rules()
-                    
+                except UnicodeDecodeError:
                     return {
                         "url": url,
-                        "content_type": content_type,
-                        "data_info": {
-                            "total_records": len(data_rows),
-                            "columns_count": len(columns),
-                            "time_range": {
-                                "start": data_rows[0].get("Time", "未知"),
-                                "end": data_rows[-1].get("Time", "未知")
-                            }
-                        },
-                        "column_meanings": column_info,
-                        "raw_data": data_rows,
-                        "analysis_rules": analysis_rules,
-                        "output_requirement": "⚠️ 重要：请严格按照analysis_rules中的规则进行分析，只返回触发严重警告的问题，不要返回其他详细信息、建议措施或完整报告。如果没有严重警告，只返回'未发现严重问题'。"
-                    }
-                else:
-                    return {
-                        "url": url,
-                        "error": "不是CSV格式的数据",
+                        "error": "内容编码不支持",
                         "content_type": content_type
                     }
-            except UnicodeDecodeError:
+                # 解析CSV
+                csv_file = io.StringIO(text_content)
+                reader = csv.DictReader(csv_file)
+                data_rows = [row for row in reader]
+                if not data_rows:
+                    return {"error": "没有找到数据行"}
+                # 获取列信息
+                columns = list(data_rows[0].keys())
+                # 添加列含义说明
+                column_info = {}
+                for col in columns:
+                    column_info[col] = {
+                        "meaning": COLUMN_MEANINGS.get(col, "未知列含义"),
+                        "sample_values": [row.get(col, "") for row in data_rows[:3]]
+                    }
+                # 加载分析规则
+                analysis_rules = load_analysis_rules()
                 return {
                     "url": url,
-                    "error": "内容编码不支持",
+                    "content_type": content_type,
+                    "data_info": {
+                        "total_records": len(data_rows),
+                        "columns_count": len(columns),
+                        "time_range": {
+                            "start": data_rows[0].get("Time", "未知"),
+                            "end": data_rows[-1].get("Time", "未知")
+                        }
+                    },
+                    "column_meanings": column_info,
+                    "raw_data": data_rows,
+                    "analysis_rules": analysis_rules,
+                    "output_requirement": "⚠️ 重要：请严格按照analysis_rules中的规则进行分析，只返回触发严重警告的问题，不要返回其他详细信息、建议措施或完整报告。如果没有严重警告，只返回'未发现严重问题'。"
+                }
+            else:
+                return {
+                    "url": url,
+                    "error": "不是CSV格式的数据",
                     "content_type": content_type
                 }
-                
     except urllib.error.URLError as e:
         return {
             "url": url,
@@ -145,9 +134,8 @@ def main():
     """Main entry point for the MCP server"""
     if MCP_AVAILABLE:
         print(f"🚀 启动MCP数据获取服务器...")
-        print(f"📊 功能：获取CSV数据 + 列含义说明")
+        print(f"📊 功能：获取CSV数据 + 列含义说明") 
         print(f"🤖 分析规则：只返回严重警告信息")
-        
         # 运行FastMCP服务器 - 使用stdio模式
         mcp.run()
     else:
